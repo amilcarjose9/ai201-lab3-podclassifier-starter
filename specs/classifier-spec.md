@@ -90,21 +90,17 @@ the format below:" followed by the output format you chose.
 
 **What output format should you request from the LLM?**
 
-```
-[blank — you need to parse the response in classify_episode(). What format
-makes parsing reliable? Think about: a single label on its own line?
-A structured format like "Label: X / Reasoning: Y"? JSON?
-What are the tradeoffs?]
-```
+Request the label on the first line by itself, and the reasoning on the subsequent lines.
+Example instruction:
+"Return your answer exactly in this format:
+Line 1: Only the exact label (interview, solo, panel, or narrative)
+Line 2+: Your brief reasoning."
 
 ---
 
 **Edge cases to handle in the prompt:**
 
-```
-[blank — what if labeled_examples is empty? What if the description is very
-short? How does your prompt handle these?]
-```
+If `labeled_examples` is empty, the prompt should gracefully fall back to a zero-shot prompt (just the instructions and the new description). The loop building the examples should just be skipped.
 
 ---
 
@@ -158,30 +154,22 @@ Extract the response text from:
 
 **Step 3 — Parse the response:**
 
-```
-[blank — how do you extract the label and reasoning from the LLM's text output?
-What string operations or parsing logic do you need?
-This depends on the output format you chose in build_few_shot_prompt.]
-```
+1. Split the raw text by newlines: `lines = response_text.strip().split('\n')`.
+2. Extract the raw label from the first line: `raw_label = lines[0]`.
+3. Extract the reasoning from the rest: `reasoning = '\n'.join(lines[1:]).strip()`.
+4. Normalize the label: lowercase it, and strip out common markdown/punctuation like asterisks, colons, or the word "label".
 
 ---
 
 **Step 4 — Validate the label:**
 
-```
-[blank — what do you do if the LLM returns a label that isn't in VALID_LABELS?
-What should label be set to?]
-```
+Check if the normalized label exists in the VALID_LABELS list. If it does not, set the label variable to the exact string `"unknown"`.
 
 ---
 
 **Step 5 — Handle errors gracefully:**
 
-```
-[blank — what could go wrong? (Network error? Unparseable response?)
-What should the function return if something fails?
-Hint: the evaluation loop runs 20 calls — one bad response shouldn't crash everything.]
-```
+Wrap the API call and parsing logic in a `try...except Exception as e:` block. If anything fails (network timeout, index out of bounds on parsing), catch the exception and return `{"label": "unknown", "reasoning": f"Error during classification: {str(e)}"}`.
 
 ---
 
@@ -212,25 +200,23 @@ any labels you're unsure about. Annotation quality is part of the lab.
 
 **Test: what does the raw LLM response look like for one episode?**
 
-```
-Episode tested: [title]
-Raw response text: [paste it here]
-```
+Episode tested: The Orchard That Vanished (t016)
+Raw response text: 
+**narrative**
+
+Reasoning: The description indicates that the episode follows a reporter (Dani Kim) tracing the chain of ownership of an orchard through various corporate entities. This is an investigative story assembled from external reporting, documents, and a clear narrative arc, which directly matches the criteria for the "narrative" format.
 
 **How did you parse the label out of the response?**
 
-```
-[describe the string operations — strip, split, lower, etc.]
-```
+First, I split the response by newline (`\n`). The first line `lines[0]` was `**narrative**`. To parse this reliably, I used regex `re.sub(r'[^a-zA-Z]', '', raw_label).lower().replace("label", "")`. This successfully stripped the asterisks and left only the pure alphabetical string "narrative", which correctly matches our VALID_LABELS list. The reasoning was captured by joining the remaining lines.
+
 
 **Did any episodes return `"unknown"`? If so, why?**
 
-```
-[yes / no — if yes, what did the raw response look like?]
-```
+No. Because of the aggressive regex normalization, there were no `"unknown"` results during standard runs. Before adding the regex step, it sometimes returned `"unknown"` because the model included formatting like `Label: solo` or `**interview**`, which failed a strict `==` equality check against VALID_LABELS.
+
 
 **One thing about the output format that surprised you:**
 
-```
-[your answer here]
-```
+Even when explicitly told in the prompt "Line 1: Only the exact label", the LLM still occasionally tries to be helpful by wrapping the label in markdown bold (`**label**`) or prefixing it (`Label: label`). It reinforces the idea that you cannot prompt your way out of formatting quirks—you must build robust string parsing to handle the variations an LLM will inevitably introduce.
+
