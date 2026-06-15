@@ -43,40 +43,39 @@ Returns the fraction of predictions that exactly match the ground truth.
 
 **Formula:**
 
-```
-[blank — write out the accuracy formula in plain English.
- What counts as "correct"? What do you divide by?]
-```
+Accuracy is the total number of correct predictions divided by the total number of predictions made. A prediction is considered correct if the predicted string exactly matches the ground truth string for that specific episode.
 
 ---
 
 **Step-by-step logic:**
 
-```
-[blank — describe the steps your code will take.
- 1. ...
- 2. ...
- 3. ...]
-```
+1. Check if the `ground_truth` list is empty. If it is, return 0.0.
+2. Initialize a counter for correct predictions to 0.
+3. Loop through both lists simultaneously (e.g., using `zip(predictions, ground_truth)`).
+4. For each pair, check if predicted == truth. If so, increment the correct counter by 1.
+5. Return the correct counter divided by the length of the ground_truth list.
 
 ---
 
 **Edge case — what if both lists are empty?**
 
-```
-[blank — what should the function return? Why?]
-```
+The function should return 0.0. If the lists are empty, dividing by the length of ground_truth (0) will cause a ZeroDivisionError. Returning 0.0 gracefully handles the case where there is no test data.
 
 ---
 
 **Worked example:**
 
-```
 predictions  = ["interview", "solo", "panel", "interview"]
 ground_truth = ["interview", "solo", "solo",  "narrative"]
 
-[blank — what does compute_accuracy() return for these inputs? Show your work.]
-```
+- Index 0: "interview" == "interview" (Correct)
+- Index 1: "solo" == "solo" (Correct)
+- Index 2: "panel" != "solo" (Incorrect)
+- Index 3: "interview" != "narrative" (Incorrect)
+
+Total correct: 2
+Total episodes: 4
+Accuracy: 2 / 4 = 0.5 (50% accuracy)
 
 ---
 
@@ -112,58 +111,45 @@ A `dict` keyed by label. Each value is a dict with three keys:
 
 **What does "correct" mean for a given class?**
 
-```
-[blank — be precise. When does an episode count as correctly classified
- for the "interview" class, for example?]
-```
+An episode counts as correctly classified for a class (e.g., "interview") if its label in ground_truth is "interview", AND its label in predictions is also exactly "interview".
 
 ---
 
 **What does "total" mean for a given class?**
 
-```
-[blank — is "total" the total number of predictions, or something more specific?]
-```
+"Total" means the total number of episodes in the *ground_truth* list that actually belong to that class. It represents the true volume of that class in the test set, regardless of what the classifier predicted.
 
 ---
 
 **Step-by-step logic:**
 
-```
-[blank — describe the steps your code will take.
- 1. Initialize ...
- 2. Loop over ...
- 3. For each pair (predicted, truth) ...
- 4. After the loop ...
- 5. Return ...]
-```
+1. Initialize a dictionary with a key for each label in VALID_LABELS, setting "correct": 0, "total": 0, and "accuracy": 0.0 for each.
+2. Loop over the predictions and ground_truth lists simultaneously using `zip`.
+3. For each pair (predicted, truth), increment the "total" count for the `truth` label by 1.
+4. If predicted == truth, also increment the "correct" count for the `truth` label by 1.
+5. After the loop finishes, iterate through the dictionary values. If "total" > 0, calculate "accuracy" = "correct" / "total".
+6. Return the dictionary.
 
 ---
 
 **Edge case — what if a class has no examples in ground_truth (total == 0)?**
 
-```
-[blank — what should accuracy be set to? Why?
- Hint: look at the docstring in evaluate.py.]
-```
+Accuracy should be set to 0.0. Attempting to divide "correct" by 0 "total" examples will cause a ZeroDivisionError. Defaulting to 0.0 is safe and accurate, as you cannot successfully predict any instances of a class that does not exist in the test set.
 
 ---
 
 **Worked example:**
 
-```
 predictions  = ["interview", "interview", "solo", "panel", "panel"]
 ground_truth = ["interview", "solo",      "solo", "panel", "narrative"]
 
-[blank — fill in the per-class results table below]
-
 label       correct  total  accuracy
 ----------  -------  -----  --------
-interview   [blank]  [blank]  [blank]
-solo        [blank]  [blank]  [blank]
-panel       [blank]  [blank]  [blank]
-narrative   [blank]  [blank]  [blank]
-```
+interview   1        1      1.0
+solo        1        2      0.5
+panel       1        1      1.0
+narrative   0        1      0.0
+
 
 ---
 
